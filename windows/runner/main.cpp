@@ -1,5 +1,6 @@
 ﻿#include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
+#include <flutter_windows.h>
 #include <windows.h>
 
 #include "flutter_window.h"
@@ -25,14 +26,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
-  Win32Window::Point origin(100, 50);
   Win32Window::Size size(390, 844);
-  // 使用 UTF-8 字符串避免 MSVC 宽字符串中文乱码
-  const char* title_utf8 = "简谱工具箱";
-  int title_len = MultiByteToWideChar(CP_UTF8, 0, title_utf8, -1, nullptr, 0);
-  std::wstring title_wstr(title_len, 0);
-  MultiByteToWideChar(CP_UTF8, 0, title_utf8, -1, &title_wstr[0], title_len);
-  if (!window.Create(title_wstr, origin, size)) {
+  // 将窗口定位在桌面右侧
+  RECT work_area;
+  SystemParametersInfo(SPI_GETWORKAREA, 0, &work_area, 0);
+  // 使用 Flutter 提供的 DPI 函数获取缩放因子
+  POINT pt = {0, 0};
+  HMONITOR monitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+  UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
+  double scale = dpi / 96.0;
+  int screen_w = static_cast<int>((work_area.right - work_area.left) / scale);
+  int screen_h = static_cast<int>((work_area.bottom - work_area.top) / scale);
+  int win_x = screen_w - 390 - 20;  // 右侧留 20px 边距
+  int win_y = (screen_h - 844) / 2;  // 垂直居中
+  if (win_y < 0) win_y = 0;
+  Win32Window::Point origin(win_x, win_y);
+  if (!window.Create(L"简谱工具箱", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
