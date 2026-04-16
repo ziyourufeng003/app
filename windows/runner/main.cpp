@@ -1,4 +1,4 @@
-#include <flutter/dart_project.h>
+﻿#include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
 
@@ -27,7 +27,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(100, 50);
   Win32Window::Size size(390, 844);
-  if (!window.Create(L"简谱工具箱", origin, size)) {
+  // 使用 UTF-8 字符串避免 MSVC 宽字符串中文乱码
+  const char* title_utf8 = "简谱工具箱";
+  int title_len = MultiByteToWideChar(CP_UTF8, 0, title_utf8, -1, nullptr, 0);
+  std::wstring title_wstr(title_len, 0);
+  MultiByteToWideChar(CP_UTF8, 0, title_utf8, -1, &title_wstr[0], title_len);
+  if (!window.Create(title_wstr, origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
